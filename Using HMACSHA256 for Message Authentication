@@ -1,0 +1,20 @@
+using System;
+using System.Security.Cryptography;
+using System.Text;
+
+class Program
+{
+    static void Main()
+    {
+        string message = "This is a secret message.";
+        byte[] key = Encoding.UTF8.GetBytes("my_secret_key");
+
+        using (HMACSHA256 hmac = new HMACSHA256(key))
+        {
+            byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
+            string hashString = BitConverter.ToString(hash).Replace("-", "");
+
+            Console.WriteLine("HMACSHA256 Hash: " + hashString);
+        }
+    }
+}
