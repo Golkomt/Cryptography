@@ -1,0 +1,85 @@
+#include <iostream>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+
+// Function to handle errors
+void handleErrors() {
+    std::cerr << "Error occurred" << std::endl;
+    abort();
+}
+
+// Function to perform AES encryption
+void encrypt(const unsigned char *plaintext, int plaintextLen, unsigned char *key, unsigned char *iv, unsigned char *ciphertext) {
+    EVP_CIPHER_CTX *ctx;
+
+    int len;
+    int ciphertextLen;
+
+    // Create and initialize the context
+    if(!(ctx = EVP_CIPHER_CTX_new())) handleErrors();
+
+    // Initialize the encryption operation
+    if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) handleErrors();
+
+    // Perform encryption
+    if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintextLen)) handleErrors();
+    ciphertextLen = len;
+
+    // Finalize encryption
+    if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) handleErrors();
+    ciphertextLen += len;
+
+    // Clean up
+    EVP_CIPHER_CTX_free(ctx);
+}
+
+// Function to perform AES decryption
+void decrypt(unsigned char *ciphertext, int ciphertextLen, unsigned char *key, unsigned char *iv, unsigned char *decryptedtext) {
+    EVP_CIPHER_CTX *ctx;
+
+    int len;
+    int plaintextLen;
+
+    // Create and initialize the context
+    if(!(ctx = EVP_CIPHER_CTX_new())) handleErrors();
+
+    // Initialize the decryption operation
+    if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) handleErrors();
+
+    // Perform decryption
+    if(1 != EVP_DecryptUpdate(ctx, decryptedtext, &len, ciphertext, ciphertextLen)) handleErrors();
+    plaintextLen = len;
+
+    // Finalize decryption
+    if(1 != EVP_DecryptFinal_ex(ctx, decryptedtext + len, &len)) handleErrors();
+    plaintextLen += len;
+
+    // Clean up
+    EVP_CIPHER_CTX_free(ctx);
+}
+
+int main() {
+    // Plaintext to be encrypted
+    unsigned char plaintext[] = "Hello, this is a secret message.";
+    int plaintextLen = strlen((char *)plaintext);
+
+    // Initialize key and IV (Initialization Vector)
+    unsigned char key[EVP_MAX_KEY_LENGTH];
+    unsigned char iv[EVP_MAX_IV_LENGTH];
+    RAND_bytes(key, EVP_MAX_KEY_LENGTH);
+    RAND_bytes(iv, EVP_MAX_IV_LENGTH);
+
+    // Buffer for ciphertext and decrypted text
+    unsigned char ciphertext[1024];
+    unsigned char decryptedtext[1024];
+
+    // Perform encryption
+    encrypt(plaintext, plaintextLen, key, iv, ciphertext);
+    std::cout << "Ciphertext: " << ciphertext << std::endl;
+
+    // Perform decryption
+    decrypt(ciphertext, plaintextLen, key, iv, decryptedtext);
+    std::cout << "Decrypted text: " << decryptedtext << std::endl;
+
+    return 0;
+}
